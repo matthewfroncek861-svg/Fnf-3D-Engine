@@ -19,7 +19,7 @@ class HealthIcon extends FlxSprite
 
 	var pixelIcons:Array<String> = ["bf-pixel", "senpai", "senpai-angry", "spirit"];
 
-	public function new(char:String = 'bf', isPlayer:Bool = false)
+	public function new(char:String = 'bf', isPlayer:Bool = false, ?_id:Int = -1)
 	{
 		super();
 			loadGraphic('assets/images/fpsPlus/iconGrid.png', true, 150, 150);
@@ -67,28 +67,17 @@ class HealthIcon extends FlxSprite
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
-		setGraphicSize(Std.int(iconSize * iconScale));
-		updateHitbox();
 
-		if (sprTracker != null){
+		if (sprTracker != null)
 			setPosition(sprTracker.x + sprTracker.width + 10, sprTracker.y - 30);
-			if(Config.betterIcons){
-				if(id == FreeplayState.curSelected){
-					animation.curAnim.curFrame = 2;
-				}
-				else{
-					animation.curAnim.curFrame = 0;
-				}
-			}
-		}
 	}
-
+	
 	public function swapOldIcon() {
 		if(isOldIcon = !isOldIcon) changeIcon('bf-old');
 		else changeIcon('bf');
 	}
 
-	public function changeIcon(char:String) {
+	public function changeIcon(char:String, ?_id:Int = -1) {
 			loadGraphic('assets/images/fpsPlus/iconGrid.png', true, 150, 150);
 			
 			animation.add('bf', [0, 1, 30], 0, false, isPlayer);
