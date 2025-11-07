@@ -55,13 +55,15 @@ class HealthIcon extends FlxSprite
 		iconSize = width;
 
 		id = _id;
+		
+			animation.add(char, [0, 1], 0, false, isPlayer);
+			animation.play(char);
+			this.char = char;
 
 			antialiasing = ClientPrefs.globalAntialiasing;
 			if(char.endsWith('-pixel')) {
 				antialiasing = false;
 			}
-		
-		scrollFactor.set();
 	}
 
 	override function update(elapsed:Float)
