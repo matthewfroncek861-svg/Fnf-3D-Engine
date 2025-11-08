@@ -769,12 +769,17 @@ class PlayState extends MusicBeatState
 		dad = new Character(0, 0, SONG.player2);
 		startCharacterPos(dad, true);
 		dadGroup.add(dad);
+		dad = new Character(100, 100, SONG.player2);
+		if (dad.isModel)
+			dad.visible = false;
+
+		var camPos:FlxPoint = new FlxPoint(dad.getGraphicMidpoint().x, dad.getGraphicMidpoint().y);
 
 		boyfriend = new Boyfriend(0, 0, SONG.player1);
 		startCharacterPos(boyfriend);
 		boyfriendGroup.add(boyfriend);
 		
-		var camPos:FlxPoint = new FlxPoint(gf.getGraphicMidpoint().x, gf.getGraphicMidpoint().y);
+		camPos:FlxPoint = new FlxPoint(gf.getGraphicMidpoint().x, gf.getGraphicMidpoint().y);
 		camPos.x += gf.cameraPosition[0];
 		camPos.y += gf.cameraPosition[1];
 
@@ -1329,6 +1334,9 @@ class PlayState extends MusicBeatState
 			return;
 		}
 
+		if (dad.isModel)
+			dad.visible = true;
+		
 		inCutscene = false;
 		var ret:Dynamic = callOnLuas('onStartCountdown', []);
 		if(ret != FunkinLua.Function_Stop) {
@@ -1902,6 +1910,20 @@ class PlayState extends MusicBeatState
 
 		callOnLuas('onUpdate', [elapsed]);
 
+		// DD: Gotta wait for models to load cuz Away3D/OpenFL does it in a jank way
+		// Load models one at a time or else the engine mixes up model/texture loading
+		if (dad.isModel && !dad.beganLoading)
+		{
+			dad.beganLoading = true;
+			dad.model = new ModelThing(dad.modelType, dad.modelName, Main.modelView, dad.modelScale, dad.modelSpeed, dad.initYaw, dad.initPitch, dad.initRoll,
+				1, dad.initX, dad.initY, dad.initZ, dad.noLoopList, dad.md5Anims);
+			return;
+		}
+		else if (dad.isModel && dad.beganLoading && !dad.model.fullyLoaded)
+		{
+			return;
+		}
+
 		switch (curStage)
 		{
 			case 'schoolEvil':
@@ -2027,6 +2049,9 @@ class PlayState extends MusicBeatState
 			}
 		}
 		super.update(elapsed);
+
+		// DD: 3D Views need updating
+		Main.modelView.update();
 
 		if(ratingString == '?') {
 			scoreTxt.text = 'Score: ' + songScore + ' | Misses: ' + songMisses + ' | Rating: ' + ratingString;
@@ -2310,6 +2335,21 @@ class PlayState extends MusicBeatState
 				{
 					if (Paths.formatToSongPath(SONG.song) != 'tutorial')
 						camZooming = true;
+
+					if (dad.canAutoAnim && (!dad.isModel || !daNote.isSustainNote))
+					{
+						switch (Math.abs(daNote.noteData))
+						{
+							case 2:
+								dad.playAnim('singUP' + altAnim, true);
+							case 3:
+								dad.playAnim('singRIGHT' + altAnim, true);
+							case 1:
+								dad.playAnim('singDOWN' + altAnim, true);
+							case 0:
+								dad.playAnim('singLEFT' + altAnim, true);
+						}
+					}
 
 					if(daNote.noteType == 'Hey!' && dad.animOffsets.exists('hey')) {
 						dad.playAnim('hey', true);
@@ -3800,6 +3840,15 @@ class PlayState extends MusicBeatState
 			luaArray[i].stop();
 		}
 		luaArray = [];
+
+		if (dad.model != null)
+			dad.model.begoneEventListeners();
+
+		Main.modelView.clear();
+		for (i in 0...Main.modelView.addedModels.length)
+			Main.modelView.addedModels[i].destroy();
+		Main.modelView.addedModels.resize(0);
+
 		super.destroy();
 	}
 
@@ -3865,7 +3914,30 @@ class PlayState extends MusicBeatState
 			setOnLuas('mustHitSection', SONG.notes[Math.floor(curStep / 16)].mustHitSection);
 			// else
 			// Conductor.changeBPM(SONG.bpm);
+		
+			// Dad doesnt interupt his own notes
+			var goodTime = (dad.isModel ? !dad.model.currentAnim.contains('sing') : !dad.animation.curAnim.name.contains('sing'));
+			if (goodTime)
+			{
+				if (SONG.notes[Math.floor(curStep / 16)].mustHitSection)
+				{
+					if (dadBeats.contains(curBeat % 4) && dad.canAutoAnim)
+						dad.dance();
+				}
+				else if (!SONG.notes[Math.floor(curStep / 16)].mustHitSection)
+				{
+					if (dadBeats.contains(curBeat % 4) && dad.canAutoAnim)
+						if (dad.isModel && dad.model != null && dad.model.currentAnim.contains('idle'))
+							dad.dance();
+				}
+			}
 		}
+		else
+		{
+			if (dadBeats.contains(curBeat % 4))
+				dad.dance();
+		}
+
 		// FlxG.log.add('change bpm' + SONG.notes[Std.int(curStep / 16)].changeBPM);
 
 		if (generatedMusic && PlayState.SONG.notes[Std.int(curStep / 16)] != null && !endingSong && !isCameraOnForcedPos)
