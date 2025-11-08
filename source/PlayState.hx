@@ -227,6 +227,10 @@ class PlayState extends MusicBeatState
 	public static var daPixelZoom:Float = 6;
 
 	public var inCutscene:Bool = false;
+
+	var dadBeats:Array<Int> = [0, 2];
+	var bfBeats:Array<Int> = [1, 3];
+
 	var songLength:Float = 0;
 
 	#if desktop
@@ -2335,8 +2339,10 @@ class PlayState extends MusicBeatState
 					if (Paths.formatToSongPath(SONG.song) != 'tutorial')
 						camZooming = true;
 
+					
 					if (dad.canAutoAnim && (!dad.isModel || !daNote.isSustainNote))
 					{
+					    var altAnim:String = "";
 						switch (Math.abs(daNote.noteData))
 						{
 							case 2:
@@ -2364,7 +2370,8 @@ class PlayState extends MusicBeatState
 							}
 						}
 
-						var animToPlay:String = '';
+						var animToPlay:String = '';	
+						var altAnim:String = "";
 						switch (Math.abs(daNote.noteData))
 						{
 							case 0:
